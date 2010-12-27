@@ -36,16 +36,23 @@
         ((< d 36) (code-char (+ (char-code #\0) (- d 26))))
         (t (error "Can't encode digit ~d" d))))
 
-;; TODO: No case preservation yet.
-(defun encode (string)
-  (let ((input-length (length string))
-        (h 0)
-        (b 0)
-        (m +maxint+)
-        (n +initial-n+)
-        (delta 0)
-        (bias +initial-bias+)
-        (encodedp))
+(defun punycode-encode (string &key preserve-case)
+  "Encode STRING with the punycode algorithm documented in RFC3492.
+
+When PRESERVE-CASE is true, emit case annotations and do not perform
+case folding (to downcase), as required for ToASCII."
+  (let* ((input-length (length string))
+         (h 0)
+         (b 0)
+         (m +maxint+)
+         (n +initial-n+)
+         (delta 0)
+         (bias +initial-bias+)
+         (encodedp)
+         (downcased-string (string-downcase string))
+         (string (if preserve-case
+                     string
+                     downcased-string)))
     (values
      (with-output-to-string (output)
        (loop for c across string
@@ -80,6 +87,7 @@
          (setf n m)
 
          (loop for c across string
+               for downcased-c across downcased-string
                for c-code = (char-code c)
                do (when (and (< c-code n) (> (incf delta) +maxint+))
                     (error "punycode_overflow(2)"))
@@ -100,7 +108,7 @@
                                   ((< q tee) q)
                                (write-char (encode-digit (+ tee (rem (- q tee) (- +base+ tee))) nil)
                                            output))))
-                      (write-char (encode-digit q nil) output))
+                      (write-char (encode-digit q (not (eql downcased-c c))) output))
                     (setf bias (adapt delta (1+ h) (= h b)))
                     (setf delta 0)
                     (incf h)))
@@ -109,13 +117,13 @@
      encodedp)))
 
 (defun to-ascii (string)
-  "Encode string to IDNA punycode format using the toAscii algorithm."
+  "Encode string to IDNA punycode format using the ToASCII algorithm."
   (with-output-to-string (output)
     (loop for (component . rest) on (split-sequence:split-sequence #\. string)
-         do (multiple-value-bind (punycode encodedp) (encode component)
-              (cond (encodedp
-                     (write-string "xn--" output)
-                     (write-string punycode output))
-                    (t (write-string component output)))
-              (when rest
-                (write-char #\. output))))))
+          do (multiple-value-bind (punycode encodedp) (punycode-encode component :preserve-case nil)
+               (cond (encodedp
+                      (write-string "xn--" output)
+                      (write-string punycode output))
+                     (t (write-string component output)))
+               (when rest
+                 (write-char #\. output))))))

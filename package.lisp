@@ -2,5 +2,5 @@
 
 (defpackage #:idna
   (:use #:cl)
-  (:export #:to-ascii))
+  (:export #:to-ascii #:punycode-encode))
 
