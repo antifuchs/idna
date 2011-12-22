@@ -3,20 +3,27 @@
 
 (cl:in-package #:idna-tests)
 
-(defun ensure-equal (original encoded &optional name)
+(defun ensure-equal (original encoded &key name (roundtrip-p t))
   (assert (string-equal (to-ascii original)
-                   encoded)
-          () (or name "(to-ascii ~s) is not ~s, but ~s") original encoded (to-ascii original)))
+                        encoded)
+          ()
+          (or name "(to-ascii ~s) is not ~s, but ~s")
+          original encoded (to-ascii original))
+  (when roundtrip-p
+    (assert (string-equal (to-unicode (to-ascii original)) original)
+            ()
+            (or name "(to-unicode (to-ascii ~s)) is not the original but ~s")
+            original (to-unicode (to-ascii original)))))
 
 ;; super simple sanity checks
 
 (ensure-equal "mueller" "mueller")
-(ensure-equal "xn--mller-kva" "xn--mller-kva")
+(ensure-equal "xn--mller-kva" "xn--mller-kva" :roundtrip-p nil)
 (ensure-equal "müller" "xn--mller-kva")
 (ensure-equal "中央大学" "xn--fiq80yua78t")
 
 (ensure-equal "mueller.example.com" "mueller.example.com")
-(ensure-equal "xn--mller-kva.example.com" "xn--mller-kva.example.com")
+(ensure-equal "xn--mller-kva.example.com" "xn--mller-kva.example.com" :roundtrip-p nil)
 (ensure-equal "müller.example.com" "xn--mller-kva.example.com")
 (ensure-equal "中央大学.tw" "xn--fiq80yua78t.tw")
 
@@ -31,7 +38,7 @@
                                                            :initial-contents (mapcar 'code-char
                                                                                      ',codepoints))
                                                ,unicode
-                                               ,(format nil "~a: (to-ascii ~~s) is not ~~s but ~~s" name))))))
+                                               :name ,(format nil "~a: (to-ascii ~~s) is not ~~s but ~~s" name))))))
   (test
    ("Arabic (Egyptian)" (#x0644 #x064A #x0647 #x0645 #x0627 #x0628 #x062A #x0643 #x0644 #x0645 #x0648 #x0634 #x0639 #x0631 #x0628 #x064A #x061F) "xn--egbpdaj6bu4bxfgehfvwxn")
    ("Chinese (simplified)" (#x4ED6 #x4EEC #x4E3A #x4EC0 #x4E48 #x4E0D #x8BF4 #x4E2D #x6587) "xn--ihqwcrb4cv8a8dqg056pqjye" )
