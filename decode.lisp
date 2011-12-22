@@ -5,7 +5,7 @@
 
 (in-package #:idna)
 
-k(defun decode-digit (cp)
+(defun decode-digit (cp)
   (cond ((< (- cp 48) 10) (- cp 22))
         ((< (- cp 65) 26) (- cp 65))
         ((< (- cp 97) 26) (- cp 97))
