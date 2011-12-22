@@ -23,6 +23,10 @@ k(defun decode-digit (cp)
         (basic (or (position +delimiter+ input :from-end t)
                    0))
         (oldi 0))
+
+    (when preserve-case
+      (error "preserve-case is currently broken )-:"))
+    
     (loop for j from 0 below basic
           for char across input
           for char-code = (char-code char)
@@ -75,23 +79,23 @@ k(defun decode-digit (cp)
              (incf n (truncate i out))
              (setf i (rem i out))
 
-             ;; insert n at position i of the output:
              ;; case of last character determines uppercase flag:
              (when preserve-case
-               (setf (aref case-flags i)
-                     ;; FIXME: should splice, too:
-                     (< (- 65 (char-code (aref input (1- ic)))) 26)))
+               (setf case-flags (nconc (subseq case-flags 0 i)
+                                       (list (< (- (char-code (aref input (1- ic))) 65)
+                                                26))
+                                       (subseq case-flags i))))
+
              (setf output (nconc (subseq output 0 i) (list n) (subseq output i)))
              (incf output-length)
-             (incf i)
-          )
+             (incf i))
 
     (when preserve-case
-      (error "NYI")
-      #+#:not-implemented-yet(loop with len = output-length
-                                   for i from 0 below len
-                                                      (setf (aref output i)
-                                                            ())))
+      (loop with len = output-length
+            for i from 0 below len
+            do (when (elt case-flags i)
+                 (setf (aref output i)
+                       (char-code (char-upcase (code-char (aref output i))))))))
     (map 'string #'code-char output)))
 
 (defun to-unicode (string)
