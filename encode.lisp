@@ -53,6 +53,9 @@ case folding (to downcase), as required for ToASCII."
          (string (if preserve-case
                      string
                      downcased-string)))
+    (when preserve-case
+      (error "preserve-case is currently broken )-:"))
+
     (values
      (with-output-to-string (output)
        (loop for c across string
