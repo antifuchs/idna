@@ -81,10 +81,11 @@
 
              ;; case of last character determines uppercase flag:
              (when preserve-case
-               (setf case-flags (nconc (subseq case-flags 0 i)
-                                       (list (< (- (char-code (aref input (1- ic))) 65)
-                                                26))
-                                       (subseq case-flags i))))
+               (setf case-flags (concatenate 'vector
+                                             (subseq case-flags 0 i)
+                                             (list (< (- (char-code (aref input (1- ic))) 65)
+                                                      26))
+                                             (subseq case-flags i))))
 
              (setf output (nconc (subseq output 0 i) (list n) (subseq output i)))
              (incf output-length)
